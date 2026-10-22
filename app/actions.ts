@@ -153,118 +153,48 @@ function revalidateAllAdminRoutes() {
   revalidatePath("/ratings");
 }
 
-/**
- * Solves the chicken-and-egg Superadmin lockout problem using the tools & RLS policies
- * available to an authenticated session (`profiles_update_own` allows `auth.uid() = id`
- * to update their own profile row, plus auth user_metadata & storage state sync).
- */
-export async function bootstrapSuperadminAction(): Promise<{
-  success: boolean;
-  message?: string;
-  error?: string;
-}> {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return {
-        success: false,
-        error: "Sign in with Google first before bootstrapping superadmin access.",
-      };
-    }
-
-    // 1. Attempt direct database column update via `profiles_update_own` RLS policy
-    const { error: dbErr } = await supabase
-      .from("profiles")
-      .update({
-        is_superadmin: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-
-    // 2. Also update Supabase Auth user_metadata and Admin Storage State
-    await supabase.auth.updateUser({
-      data: { is_superadmin: true },
-    });
-
-    const overlay = await readAdminOverlay(supabase);
-    if (!overlay.superadminIds.includes(user.id)) {
-      overlay.superadminIds.push(user.id);
-    }
-    overlay.revokedSuperadminIds = overlay.revokedSuperadminIds.filter(
-      (id) => id !== user.id
-    );
-    await writeAdminOverlay(supabase, overlay);
-
-    revalidateAllAdminRoutes();
-
-    if (dbErr && dbErr.message.includes("is_superadmin")) {
-      return {
-        success: true,
-        message:
-          "Bootstrapped superadmin via authenticated session state! (Run supabase/admin_schema.sql in Supabase SQL Editor to also persist the physical profiles.is_superadmin column.)",
-      };
-    }
-
-    return {
-      success: true,
-      message: "profiles.is_superadmin = TRUE verified and activated for your account!",
-    };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Bootstrap failed.",
-    };
-  }
-}
-
 export async function toggleUserSuperadminAction(
   targetUserId: string,
   nextValue: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const ctx = await loadAdminContext();
-    if (ctx.status !== "authorized" || !ctx.user) {
+    if (ctx.status !== "authorized" || !ctx.user || !ctx.data) {
       return { success: false, error: "Superadmin authorization required." };
     }
 
-    const supabase = await createClient();
+    if (!nextValue) {
+      const remaining = ctx.data.profiles.filter(
+        (p) => p.is_superadmin && p.id !== targetUserId
+      ).length;
+      if (remaining < 1) {
+        return {
+          success: false,
+          error: "Keep at least one superadmin.",
+        };
+      }
+    }
 
-    // 1. Try updating `profiles.is_superadmin` directly in Postgres
-    await supabase
+    const supabase = await createClient();
+    const { data, error } = await supabase
       .from("profiles")
       .update({
         is_superadmin: nextValue,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", targetUserId);
+      .eq("id", targetUserId)
+      .select("id, is_superadmin")
+      .maybeSingle();
 
-    // 2. Sync overlay state so role changes work even if admin_schema.sql hasn't been executed yet
-    const overlay = await readAdminOverlay(supabase);
-    if (nextValue) {
-      if (!overlay.superadminIds.includes(targetUserId)) {
-        overlay.superadminIds.push(targetUserId);
-      }
-      overlay.revokedSuperadminIds = overlay.revokedSuperadminIds.filter(
-        (id) => id !== targetUserId
-      );
-    } else {
-      overlay.superadminIds = overlay.superadminIds.filter(
-        (id) => id !== targetUserId
-      );
-      if (!overlay.revokedSuperadminIds.includes(targetUserId)) {
-        overlay.revokedSuperadminIds.push(targetUserId);
-      }
+    if (error || !data) {
+      return {
+        success: false,
+        error: error?.message || "Could not update superadmin role.",
+      };
     }
-    await writeAdminOverlay(supabase, overlay);
 
-    if (targetUserId === ctx.user.id) {
-      await supabase.auth.updateUser({
-        data: { is_superadmin: nextValue },
-      });
+    if (data.is_superadmin !== nextValue) {
+      return { success: false, error: "Role change was rejected." };
     }
 
     revalidateAllAdminRoutes();

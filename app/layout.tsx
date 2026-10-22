@@ -17,7 +17,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "PRISM POP — Superadmin Studio & Database Telemetry",
   description:
-    "Google-authenticated Superadmin console for Prism Pop: creative database telemetry, member profiles, AI media CRUD, and rating analytics.",
+    "Private superadmin console for Prism Pop — telemetry, members, media, and ratings.",
 };
 
 export default function RootLayout({

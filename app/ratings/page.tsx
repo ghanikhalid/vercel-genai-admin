@@ -16,8 +16,6 @@ export default async function RatingsAdminPage() {
           <AdminGate
             status={ctx.status === "unauthenticated" ? "unauthenticated" : "forbidden"}
             user={ctx.user}
-            currentProfile={ctx.currentProfile}
-            hasDbSuperadminColumn={ctx.hasDbSuperadminColumn}
             nextPath="/ratings"
           />
         </main>

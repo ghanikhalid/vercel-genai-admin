@@ -63,6 +63,7 @@ export default function UsersManager({
   const inspectedUserVotes = inspectedUser
     ? votes.filter((v) => v.user_id === inspectedUser.id)
     : [];
+  const superadminCount = profiles.filter((p) => p.is_superadmin).length;
 
   const handleToggleSuperadmin = (prof: EnrichedProfile) => {
     setStatusMsg(null);
@@ -74,7 +75,9 @@ export default function UsersManager({
         return;
       }
       setStatusMsg(
-        `Updated ${prof.full_name}: is_superadmin = ${nextVal ? "TRUE" : "FALSE"}`
+        nextVal
+          ? `Granted superadmin to ${prof.full_name}.`
+          : `Removed superadmin from ${prof.full_name}.`
       );
       router.refresh();
     });
@@ -84,15 +87,13 @@ export default function UsersManager({
     <div className="telemetry-suite">
       <div className="page-header-row">
         <div>
-          <span className="kicker">Database Table · public.profiles</span>
+          <span className="kicker">Members</span>
           <h1 className="page-title">
-            Users &amp; <span className="text-gradient">Member Profiles</span>
+            Users &amp; <span className="text-gradient">member profiles</span>
           </h1>
         </div>
         <p className="page-sub">
-          Inspect all registered member profiles, avatar storage sources,
-          authored AI media counts, voting generosity metrics, and{" "}
-          <code>profiles.is_superadmin</code> access flags.
+          Search the club, review activity, and grant or revoke superadmin.
         </p>
       </div>
 
@@ -102,7 +103,7 @@ export default function UsersManager({
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search profiles by name or UUID..."
+          placeholder="Search by name..."
           className="admin-input search-input"
         />
 
@@ -157,7 +158,7 @@ export default function UsersManager({
             <thead>
               <tr>
                 <th>Member</th>
-                <th>Role (is_superadmin)</th>
+                <th>Role</th>
                 <th>AI Media</th>
                 <th>Net Karma</th>
                 <th>Votes Cast</th>
@@ -212,10 +213,10 @@ export default function UsersManager({
                       {prof.is_superadmin ? (
                         <span className="status-badge superadmin">
                           <IconShield size={12} />
-                          <span>TRUE</span>
+                          <span>Superadmin</span>
                         </span>
                       ) : (
-                        <span className="status-badge member">FALSE</span>
+                        <span className="status-badge member">Member</span>
                       )}
                     </td>
                     <td>
@@ -260,7 +261,10 @@ export default function UsersManager({
                     <td onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
-                        disabled={isPending}
+                        disabled={
+                          isPending ||
+                          (prof.is_superadmin && superadminCount <= 1)
+                        }
                         onClick={() => handleToggleSuperadmin(prof)}
                         className="btn-ghost"
                         style={{ padding: "6px 12px", fontSize: "0.76rem" }}
@@ -310,9 +314,9 @@ export default function UsersManager({
                   </span>
                 </div>
                 <div className="meta-pill">
-                  <span className="meta-pill-label">IS_SUPERADMIN</span>
+                  <span className="meta-pill-label">ROLE</span>
                   <span className="meta-pill-value">
-                    {inspectedUser.is_superadmin ? "TRUE (Superadmin)" : "FALSE"}
+                    {inspectedUser.is_superadmin ? "Superadmin" : "Member"}
                   </span>
                 </div>
                 <div className="meta-pill">

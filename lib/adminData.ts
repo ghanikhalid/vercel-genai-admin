@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabaseServer";
 import type { User } from "@supabase/supabase-js";
 
@@ -211,7 +212,12 @@ export async function writeAdminOverlay(
   supabase: Awaited<ReturnType<typeof createClient>>,
   state: AdminOverlayState
 ): Promise<void> {
-  const payload = Buffer.from(JSON.stringify(state, null, 2), "utf-8");
+  const sanitized: AdminOverlayState = {
+    ...state,
+    superadminIds: [],
+    revokedSuperadminIds: [],
+  };
+  const payload = Buffer.from(JSON.stringify(sanitized, null, 2), "utf-8");
   await supabase.storage.from(ADMIN_STATE_BUCKET).upload(ADMIN_STATE_PATH, payload, {
     contentType: "application/json",
     upsert: true,
@@ -241,6 +247,12 @@ function classifyArchetype(
   return "Spicy Debate";
 }
 
+const FOUNDING_SUPERADMIN_IDS = new Set([
+  "c93ee310-c0d4-41e6-9cd2-711125ab35d9",
+  "c3661aaf-67c2-41fa-8bb0-c6c28c32df8b",
+  "7bbcb74e-24e8-492e-b32c-f37af8fe35eb",
+]);
+
 const STOP_WORDS = new Set([
   "THE", "AND", "FOR", "THAT", "THIS", "WITH", "YOU", "YOUR", "ARE", "WAS",
   "NOT", "BUT", "FROM", "HAVE", "HAS", "HAD", "WHEN", "WHAT", "WHO", "WHY",
@@ -248,7 +260,7 @@ const STOP_WORDS = new Set([
   "ONE", "TWO", "AFTER", "BEFORE", "WHILE", "STILL", "ONLY", "OVER", "UNDER",
 ]);
 
-export async function loadAdminContext(): Promise<AdminGateResult> {
+export const loadAdminContext = cache(async function loadAdminContext(): Promise<AdminGateResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -279,47 +291,43 @@ export async function loadAdminContext(): Promise<AdminGateResult> {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!existingOwnProfile) {
+  let ownRow = (existingOwnProfile ?? null) as Record<string, unknown> | null;
+
+  if (!ownRow) {
     await supabase.from("profiles").upsert(
       {
         id: user.id,
-        first_name: defaultFirst || user.email?.split("@")[0] || "Admin",
+        first_name: defaultFirst || user.email?.split("@")[0] || "Member",
         last_name: defaultLast || "",
         avatar_url: (user.user_metadata?.avatar_url as string | undefined) || null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" }
     );
+    const { data: createdOwnProfile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+    ownRow = (createdOwnProfile ?? null) as Record<string, unknown> | null;
   }
 
-  const [overlay, profilesRes] = await Promise.all([
-    readAdminOverlay(supabase),
-    supabase.from("profiles").select("*").order("updated_at", { ascending: false }),
-  ]);
+  const hasDbSuperadminColumn = Boolean(
+    ownRow && "is_superadmin" in ownRow
+  );
+  const authorized = hasDbSuperadminColumn
+    ? ownRow?.is_superadmin === true
+    : FOUNDING_SUPERADMIN_IDS.has(user.id);
 
-  const rawProfiles = (profilesRes.data ?? []) as Array<Record<string, unknown>>;
-  const hasDbSuperadminColumn =
-    rawProfiles.length > 0 && "is_superadmin" in rawProfiles[0];
-
-  const isUserSuperadmin = (row: Record<string, unknown>, uid: string): boolean => {
-    if (overlay.revokedSuperadminIds.includes(uid)) return false;
-    if (row.is_superadmin === true) return true;
-    if (overlay.superadminIds.includes(uid)) return true;
-    if (uid === user.id && user.user_metadata?.is_superadmin === true) return true;
-    return false;
-  };
-
-  const ownRow =
-    rawProfiles.find((r) => String(r.id) === user.id) ||
-    ({
+  if (!ownRow) {
+    ownRow = {
       id: user.id,
       first_name: defaultFirst || user.email?.split("@")[0] || "Member",
       last_name: defaultLast || "",
       avatar_url: user.user_metadata?.avatar_url || null,
       updated_at: new Date().toISOString(),
-    } as Record<string, unknown>);
-
-  const authorized = isUserSuperadmin(ownRow, user.id);
+    };
+  }
 
   if (!authorized) {
     const fullName = [
@@ -334,7 +342,7 @@ export async function loadAdminContext(): Promise<AdminGateResult> {
       status: "forbidden",
       user,
       hasDbSuperadminColumn,
-      profilesPreviewCount: rawProfiles.length,
+      profilesPreviewCount: 0,
       currentProfile: {
         id: user.id,
         first_name: (ownRow.first_name as string) || null,
@@ -360,6 +368,16 @@ export async function loadAdminContext(): Promise<AdminGateResult> {
       data: null,
     };
   }
+
+  const [overlay, profilesRes] = await Promise.all([
+    readAdminOverlay(supabase),
+    supabase.from("profiles").select("*").order("updated_at", { ascending: false }),
+  ]);
+
+  const rawProfiles = (profilesRes.data ?? []) as Array<Record<string, unknown>>;
+
+  const isUserSuperadmin = (row: Record<string, unknown>): boolean =>
+    row.is_superadmin === true;
 
   // Authorized superadmin: load full database & storage telemetry
   const [imagesRes, votesRes, fortunesRes, rootCaptionedList, rootAvatarsList] =
@@ -501,7 +519,7 @@ export async function loadAdminContext(): Promise<AdminGateResult> {
       full_name: fullName,
       avatar_url: typeof row.avatar_url === "string" ? row.avatar_url : null,
       updated_at: typeof row.updated_at === "string" ? row.updated_at : null,
-      is_superadmin: isUserSuperadmin(row, id),
+      is_superadmin: isUserSuperadmin(row),
     });
   }
 
@@ -880,4 +898,4 @@ export async function loadAdminContext(): Promise<AdminGateResult> {
       stats,
     },
   };
-}
+});

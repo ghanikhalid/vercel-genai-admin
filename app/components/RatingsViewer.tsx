@@ -50,16 +50,15 @@ export default function RatingsViewer({
     <div className="telemetry-suite">
       <div className="page-header-row">
         <div>
-          <span className="kicker">Database Table · public.caption_votes</span>
+          <span className="kicker">Community</span>
           <h1 className="page-title">
             Upvotes, Downvotes &amp;{" "}
-            <span className="text-gradient">Ratings Ledger</span>
+            <span className="text-gradient">ratings</span>
           </h1>
         </div>
         <p className="page-sub">
-          Inspect every individual community upvote (<code>+1</code>) and
-          downvote (<code>-1</code>), aggregated media scores, self-vote flags,
-          and voter-to-creator sentiment.
+          Every upvote and downvote across the club, plus how each frame is
+          landing.
         </p>
       </div>
 

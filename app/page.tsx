@@ -20,8 +20,6 @@ export default async function AdminHomePage() {
           <AdminGate
             status={ctx.status === "unauthenticated" ? "unauthenticated" : "forbidden"}
             user={ctx.user}
-            currentProfile={ctx.currentProfile}
-            hasDbSuperadminColumn={ctx.hasDbSuperadminColumn}
             nextPath="/"
           />
         </main>

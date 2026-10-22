@@ -122,7 +122,7 @@ export default function TelemetryDashboard({
         <div className="admin-quick-actions">
           <Link href="/media" className="btn-primary">
             <IconCamera size={16} />
-            <span>Manage AI Media (CRUD)</span>
+            <span>Manage AI Media</span>
           </Link>
           <Link href="/users" className="btn-ghost">
             <IconUser size={16} />
@@ -537,7 +537,7 @@ export default function TelemetryDashboard({
           <div className="storage-breakdown-box">
             <div className="storage-bucket-row">
               <div>
-                <span className="kicker">BUCKET: CAPTIONED-IMAGES</span>
+                <span className="kicker">Captions</span>
                 <p className="card-copy" style={{ margin: "2px 0 0" }}>
                   AI meme frames ({storageObjects.filter((o) => o.bucket === "captioned-images").length} files)
                 </p>
@@ -549,7 +549,7 @@ export default function TelemetryDashboard({
 
             <div className="storage-bucket-row">
               <div>
-                <span className="kicker">BUCKET: AVATARS</span>
+                <span className="kicker">Avatars</span>
                 <p className="card-copy" style={{ margin: "2px 0 0" }}>
                   Custom member portraits ({storageObjects.filter((o) => o.bucket === "avatars").length} files)
                 </p>

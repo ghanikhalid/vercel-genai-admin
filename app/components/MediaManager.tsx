@@ -214,16 +214,12 @@ export default function MediaManager({
     <div className="telemetry-suite">
       <div className="panel-header-split">
         <div>
-          <span className="kicker">
-            Database Table · public.captioned_images (Full CRUD)
-          </span>
+          <span className="kicker">Library</span>
           <h1 className="page-title">
             AI Generated <span className="text-gradient">Media Studio</span>
           </h1>
           <p className="page-sub" style={{ marginTop: "6px" }}>
-            Create new Gemini Vision captioned images, inspect all community
-            frames, edit or AI-regenerate captions inline, and delete media
-            records.
+            Upload, caption, edit, and remove community frames.
           </p>
         </div>
 
@@ -251,7 +247,7 @@ export default function MediaManager({
         >
           <div className="feed-header" style={{ marginBottom: "18px" }}>
             <div>
-              <span className="kicker">CREATE · public.captioned_images</span>
+              <span className="kicker">New frame</span>
               <h2 className="upload-heading" style={{ marginTop: "4px" }}>
                 Generate or Stamp New AI Media
               </h2>

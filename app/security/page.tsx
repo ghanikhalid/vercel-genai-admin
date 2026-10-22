@@ -1,11 +1,11 @@
 import AdminGate from "@/app/components/AdminGate";
 import AdminHeader from "@/app/components/AdminHeader";
-import { IconDatabase, IconLock, IconShield } from "@/app/components/Icons";
+import { IconShield, IconUser } from "@/app/components/Icons";
 import { loadAdminContext } from "@/lib/adminData";
 
 export const dynamic = "force-dynamic";
 
-export default async function SecurityGuidePage() {
+export default async function AccessPage() {
   const ctx = await loadAdminContext();
 
   if (ctx.status !== "authorized" || !ctx.data || !ctx.user) {
@@ -16,8 +16,6 @@ export default async function SecurityGuidePage() {
           <AdminGate
             status={ctx.status === "unauthenticated" ? "unauthenticated" : "forbidden"}
             user={ctx.user}
-            currentProfile={ctx.currentProfile}
-            hasDbSuperadminColumn={ctx.hasDbSuperadminColumn}
             nextPath="/security"
           />
         </main>
@@ -25,36 +23,8 @@ export default async function SecurityGuidePage() {
     );
   }
 
-  const sqlMigration = `-- PRISM POP — SUPERADMIN DATABASE MIGRATION & RLS POLICIES
-ALTER TABLE public.profiles
-    ADD COLUMN IF NOT EXISTS is_superadmin BOOLEAN NOT NULL DEFAULT FALSE;
-
-UPDATE public.profiles
-SET is_superadmin = TRUE
-WHERE id = '${ctx.user.id}';
-
-CREATE OR REPLACE FUNCTION public.is_superadmin()
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
-AS $$
-    SELECT COALESCE(
-        (SELECT is_superadmin FROM public.profiles WHERE id = auth.uid()),
-        FALSE
-    );
-$$;
-
-CREATE POLICY "captioned_images_update_superadmin"
-    ON public.captioned_images FOR UPDATE
-    TO authenticated
-    USING (public.is_superadmin() OR auth.uid() = user_id)
-    WITH CHECK (public.is_superadmin() OR auth.uid() = user_id);
-
-CREATE POLICY "captioned_images_delete_superadmin"
-    ON public.captioned_images FOR DELETE
-    TO authenticated
-    USING (public.is_superadmin() OR auth.uid() = user_id);`;
+  const superadmins = ctx.data.profiles.filter((p) => p.is_superadmin);
+  const currentUserId = ctx.user.id;
 
   return (
     <div className="page-wrap">
@@ -63,18 +33,15 @@ CREATE POLICY "captioned_images_delete_superadmin"
       <main className="main-content">
         <div className="page-header-row">
           <div>
-            <span className="kicker">
-              Zero-Trust Architecture · Superadmin Lockout Analysis
-            </span>
+            <span className="kicker">Access</span>
             <h1 className="page-title">
-              Security Posture &amp;{" "}
-              <span className="text-gradient">The Bootstrap Paradox</span>
+              Who can open{" "}
+              <span className="text-gradient">this console</span>
             </h1>
           </div>
           <p className="page-sub">
-            How every route in this Admin Console enforces{" "}
-            <code>Google OAuth + profiles.is_superadmin == TRUE</code>, and how
-            we solve the initial lockout paradox with the tools at our disposal.
+            Superadmin is stored on each member profile and can only be changed
+            by someone who already has it. Nobody can grant it to themselves.
           </p>
         </div>
 
@@ -82,78 +49,48 @@ CREATE POLICY "captioned_images_delete_superadmin"
           <div className="bento-card">
             <div className="bento-body">
               <div className="kpi-icon-badge" style={{ marginBottom: "8px" }}>
-                <IconLock size={18} />
-              </div>
-              <span className="kicker">01 · Existing RLS Self-Update</span>
-              <h2 className="card-heading">
-                Leveraging <code>profiles_update_own</code>
-              </h2>
-              <p className="card-copy">
-                In <code>vercel-genai/supabase/schema.sql</code>, the policy{" "}
-                <code>profiles_update_own</code> grants any{" "}
-                <code>authenticated</code> user permission to{" "}
-                <code>UPDATE</code> their own row (<code>auth.uid() = id</code>)
-                without column-level restrictions. Using our authenticated
-                Google session + <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, we
-                can execute{" "}
-                <code>
-                  supabase.from(&quot;profiles&quot;).update(&#123;
-                  is_superadmin: true &#125;).eq(&quot;id&quot;, user.id)
-                </code>{" "}
-                to bootstrap our own account!
-              </p>
-            </div>
-          </div>
-
-          <div className="bento-card">
-            <div className="bento-body">
-              <div className="kpi-icon-badge" style={{ marginBottom: "8px" }}>
-                <IconDatabase size={18} />
-              </div>
-              <span className="kicker">02 · Out-of-Band Database Access</span>
-              <h2 className="card-heading">
-                Supabase SQL Editor / Table Editor
-              </h2>
-              <p className="card-copy">
-                As the database owner, running SQL in the{" "}
-                <strong>Supabase Dashboard SQL Editor</strong> (or using the{" "}
-                <code>service_role</code> key in a local seed script) executes
-                with superuser privileges that bypass RLS completely, allowing us
-                to add <code>is_superadmin</code> and set{" "}
-                <code>is_superadmin = TRUE</code> on our own UUID before
-                enforcing the admin check.
-              </p>
-            </div>
-          </div>
-
-          <div className="bento-card">
-            <div className="bento-body">
-              <div className="kpi-icon-badge" style={{ marginBottom: "8px" }}>
                 <IconShield size={18} />
               </div>
-              <span className="kicker">03 · Hardening Post-Bootstrap</span>
-              <h2 className="card-heading">
-                <code>SECURITY DEFINER</code> Guard
-              </h2>
+              <span className="kicker">Active superadmins</span>
+              <h2 className="card-heading">{superadmins.length}</h2>
               <p className="card-copy">
-                Once our superadmin account is promoted, we apply{" "}
-                <code>public.is_superadmin()</code> in RLS policies so that only
-                verified superadmins can modify other users&apos; roles or
-                perform cross-user <code>UPDATE</code> and <code>DELETE</code>{" "}
-                operations on <code>captioned_images</code>.
+                Grant or revoke from Users. The last superadmin cannot be
+                removed.
               </p>
             </div>
           </div>
         </section>
 
-        <section className="telemetry-panel">
-          <span className="kicker">
-            Database Migration · supabase/admin_schema.sql
-          </span>
-          <h2 className="section-title" style={{ marginTop: "6px" }}>
-            Complete SQL Schema for Superadmin Role &amp; Policies
-          </h2>
-          <pre className="sql-code-block">{sqlMigration}</pre>
+        <section className="telemetry-panel" style={{ marginTop: "22px" }}>
+          <div className="feed-header">
+            <h2 className="section-title">Approved accounts</h2>
+            <span className="count-pill">{superadmins.length} superadmin</span>
+          </div>
+
+          <div className="dossier-media-list" style={{ marginTop: "16px" }}>
+            {superadmins.map((prof) => (
+              <div key={prof.id} className="dossier-media-item">
+                {prof.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={prof.avatar_url}
+                    alt={prof.full_name}
+                    className="user-avatar-thumb"
+                  />
+                ) : (
+                  <div className="user-avatar-fallback">
+                    <IconUser size={16} />
+                  </div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <div className="user-cell-name">{prof.full_name}</div>
+                  <div className="leader-sub">
+                    {prof.id === currentUserId ? "You" : "Superadmin"}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       </main>
     </div>

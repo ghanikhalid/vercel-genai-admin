@@ -54,7 +54,7 @@ export default function AdminHeader({
             className={`nav-pill ${active === "media" ? "active" : ""}`}
           >
             <IconCamera size={14} />
-            <span>AI Media CRUD</span>
+            <span>AI Media</span>
           </Link>
           <Link
             href="/ratings"
@@ -68,7 +68,7 @@ export default function AdminHeader({
             className={`nav-pill ${active === "security" ? "active" : ""}`}
           >
             <IconShield size={14} />
-            <span>RLS &amp; Lockout Guide</span>
+            <span>Access</span>
           </Link>
         </nav>
       )}
