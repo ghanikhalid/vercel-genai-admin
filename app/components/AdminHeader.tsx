@@ -4,7 +4,9 @@ import AuthButton from "./AuthButton";
 import {
   IconCamera,
   IconChart,
+  IconDatabase,
   IconShield,
+  IconSparkle,
   IconUser,
   IconVoteUp,
 } from "./Icons";
@@ -12,7 +14,12 @@ import {
 export type AdminRouteTab =
   | "telemetry"
   | "users"
+  | "prompts"
+  | "terms"
   | "media"
+  | "images"
+  | "generations"
+  | "models"
   | "ratings"
   | "security";
 
@@ -35,33 +42,41 @@ export default function AdminHeader({
 
       {isSuperadmin && (
         <nav className="site-nav" aria-label="Admin navigation">
-          <Link
-            href="/"
-            className={`nav-pill ${active === "telemetry" ? "active" : ""}`}
-          >
+          <Link href="/" className={`nav-pill ${active === "telemetry" ? "active" : ""}`}>
             <IconChart size={14} />
             <span>Telemetry</span>
           </Link>
-          <Link
-            href="/users"
-            className={`nav-pill ${active === "users" ? "active" : ""}`}
-          >
+          <Link href="/users" className={`nav-pill ${active === "users" ? "active" : ""}`}>
             <IconUser size={14} />
-            <span>Users &amp; Profiles</span>
+            <span>Users</span>
           </Link>
-          <Link
-            href="/media"
-            className={`nav-pill ${active === "media" ? "active" : ""}`}
-          >
+          <Link href="/prompts" className={`nav-pill ${active === "prompts" ? "active" : ""}`}>
+            <IconSparkle size={14} />
+            <span>Prompts</span>
+          </Link>
+          <Link href="/terms" className={`nav-pill ${active === "terms" ? "active" : ""}`}>
+            <span>Terms</span>
+          </Link>
+          <Link href="/media" className={`nav-pill ${active === "media" ? "active" : ""}`}>
             <IconCamera size={14} />
             <span>AI Media</span>
           </Link>
+          <Link href="/images" className={`nav-pill ${active === "images" ? "active" : ""}`}>
+            <span>Images</span>
+          </Link>
           <Link
-            href="/ratings"
-            className={`nav-pill ${active === "ratings" ? "active" : ""}`}
+            href="/generations"
+            className={`nav-pill ${active === "generations" ? "active" : ""}`}
           >
+            <IconDatabase size={14} />
+            <span>Generations</span>
+          </Link>
+          <Link href="/models" className={`nav-pill ${active === "models" ? "active" : ""}`}>
+            <span>Models</span>
+          </Link>
+          <Link href="/ratings" className={`nav-pill ${active === "ratings" ? "active" : ""}`}>
             <IconVoteUp size={14} />
-            <span>Votes &amp; Ratings</span>
+            <span>Ratings</span>
           </Link>
           <Link
             href="/security"

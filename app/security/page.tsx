@@ -1,7 +1,13 @@
-import AdminGate from "@/app/components/AdminGate";
 import AdminHeader from "@/app/components/AdminHeader";
+import ResourceManager from "@/app/components/ResourceManager";
+import UnauthorizedView from "@/app/components/UnauthorizedView";
 import { IconShield, IconUser } from "@/app/components/Icons";
 import { loadAdminContext } from "@/lib/adminData";
+import {
+  listCatalog,
+  type SignupDomain,
+  type WhitelistedEmail,
+} from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -10,21 +16,21 @@ export default async function AccessPage() {
 
   if (ctx.status !== "authorized" || !ctx.data || !ctx.user) {
     return (
-      <div className="page-wrap">
-        <AdminHeader user={ctx.user} active="security" isSuperadmin={false} />
-        <main className="main-content">
-          <AdminGate
-            status={ctx.status === "unauthenticated" ? "unauthenticated" : "forbidden"}
-            user={ctx.user}
-            nextPath="/security"
-          />
-        </main>
-      </div>
+      <UnauthorizedView
+        status={ctx.status}
+        user={ctx.user}
+        active="security"
+        nextPath="/security"
+      />
     );
   }
 
   const superadmins = ctx.data.profiles.filter((p) => p.is_superadmin);
   const currentUserId = ctx.user.id;
+  const [domains, emails] = await Promise.all([
+    listCatalog<SignupDomain>("allowed_signup_domains", "domain"),
+    listCatalog<WhitelistedEmail>("whitelisted_emails", "email"),
+  ]);
 
   return (
     <div className="page-wrap">
@@ -40,8 +46,8 @@ export default async function AccessPage() {
             </h1>
           </div>
           <p className="page-sub">
-            Superadmin is stored on each member profile and can only be changed
-            by someone who already has it. Nobody can grant it to themselves.
+            Superadmins, allowed signup domains, and individual email
+            exceptions.
           </p>
         </div>
 
@@ -61,7 +67,7 @@ export default async function AccessPage() {
           </div>
         </section>
 
-        <section className="telemetry-panel" style={{ marginTop: "22px" }}>
+        <section className="telemetry-panel">
           <div className="feed-header">
             <h2 className="section-title">Approved accounts</h2>
             <span className="count-pill">{superadmins.length} superadmin</span>
@@ -92,6 +98,58 @@ export default async function AccessPage() {
             ))}
           </div>
         </section>
+
+        <ResourceManager
+          kicker="Signup"
+          title="Allowed signup domains"
+          subtitle="Only these email domains can create an account, unless the address is individually listed below."
+          table="allowed_signup_domains"
+          rows={domains.rows}
+          missing={domains.missing}
+          error={domains.error}
+          searchKeys={["domain", "notes"]}
+          columns={[
+            { key: "domain", label: "Domain", mono: true },
+            { key: "notes", label: "Notes", max: 72 },
+            { key: "created_at", label: "Added", mono: true, max: 24 },
+          ]}
+          fields={[
+            {
+              key: "domain",
+              label: "Domain",
+              kind: "text",
+              required: true,
+              placeholder: "company.com",
+            },
+            { key: "notes", label: "Notes", kind: "text" },
+          ]}
+        />
+
+        <ResourceManager
+          kicker="Exceptions"
+          title="Whitelisted emails"
+          subtitle="Individual addresses that can sign up even if their domain is not allowed."
+          table="whitelisted_emails"
+          rows={emails.rows}
+          missing={emails.missing}
+          error={emails.error}
+          searchKeys={["email", "notes"]}
+          columns={[
+            { key: "email", label: "Email" },
+            { key: "notes", label: "Notes", max: 72 },
+            { key: "created_at", label: "Added", mono: true, max: 24 },
+          ]}
+          fields={[
+            {
+              key: "email",
+              label: "Email",
+              kind: "email",
+              required: true,
+              placeholder: "name@company.com",
+            },
+            { key: "notes", label: "Notes", kind: "text" },
+          ]}
+        />
       </main>
     </div>
   );

@@ -151,6 +151,12 @@ function revalidateAllAdminRoutes() {
   revalidatePath("/users");
   revalidatePath("/media");
   revalidatePath("/ratings");
+  revalidatePath("/prompts");
+  revalidatePath("/terms");
+  revalidatePath("/images");
+  revalidatePath("/generations");
+  revalidatePath("/models");
+  revalidatePath("/security");
 }
 
 export async function toggleUserSuperadminAction(

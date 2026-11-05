@@ -117,7 +117,8 @@ code {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 20px;
-  border-radius: 999px;
+  border-radius: 28px;
+  flex-wrap: wrap;
   background: rgba(15, 15, 20, 0.78);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
@@ -1985,6 +1986,45 @@ code {
   .users-split-layout {
     grid-template-columns: 1fr;
   }
+}
+
+.resource-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.image-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.image-library-card {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+}
+
+.image-library-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-library-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.image-library-meta p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
 }
 
 @media (max-width: 860px) {
