@@ -1,5 +1,6 @@
 -- Catalog tables for the superadmin console.
 -- Run AFTER supabase/admin_schema.sql (needs public.is_superadmin()).
+-- Safe to re-run. Seeds Gemini + a caption chain so Models/Prompts/Terms are not empty.
 
 create or replace function public.apply_superadmin_crud(table_name text)
 returns void
@@ -154,6 +155,86 @@ create table if not exists public.whitelisted_emails (
 insert into public.prompt_chain_mix (name, notes, is_active)
 select 'Default mix', 'Traffic mix across prompt chains', true
 where not exists (select 1 from public.prompt_chain_mix);
+
+insert into public.llm_providers (id, name, slug, base_url, is_enabled)
+values (
+    'a11c0000-0000-4000-8000-000000000001',
+    'Google Gemini',
+    'gemini',
+    'https://generativelanguage.googleapis.com',
+    true
+)
+on conflict (slug) do nothing;
+
+insert into public.llm_models (id, provider_id, name, model_key, is_enabled)
+values
+    (
+        'a11c0000-0000-4000-8000-000000000011',
+        'a11c0000-0000-4000-8000-000000000001',
+        'Gemini 2.5 Flash',
+        'gemini-2.5-flash',
+        true
+    ),
+    (
+        'a11c0000-0000-4000-8000-000000000012',
+        'a11c0000-0000-4000-8000-000000000001',
+        'Gemini 2.0 Flash',
+        'gemini-2.0-flash',
+        true
+    )
+on conflict (id) do nothing;
+
+insert into public.prompt_chains (id, name, description, is_active)
+values (
+    'a11c0000-0000-4000-8000-000000000021',
+    'Caption studio',
+    'Single-step caption generation for uploaded photos.',
+    true
+)
+on conflict (id) do nothing;
+
+insert into public.prompt_chain_steps (
+    id, chain_id, step_order, name, prompt_template, model_id
+)
+values (
+    'a11c0000-0000-4000-8000-000000000031',
+    'a11c0000-0000-4000-8000-000000000021',
+    1,
+    'Write caption',
+    'Look at this photograph. Write one short caption that only works because of what is actually in the frame.',
+    'a11c0000-0000-4000-8000-000000000011'
+)
+on conflict (id) do nothing;
+
+insert into public.prompt_chain_mix_entries (mix_id, chain_id, weight)
+select m.id, 'a11c0000-0000-4000-8000-000000000021'::uuid, 1
+from public.prompt_chain_mix m
+where not exists (
+    select 1
+    from public.prompt_chain_mix_entries e
+    where e.chain_id = 'a11c0000-0000-4000-8000-000000000021'
+)
+limit 1;
+
+insert into public.terms (id, slug, title, body, is_published)
+values (
+    'a11c0000-0000-4000-8000-000000000041',
+    'terms',
+    'Terms of use',
+    'Prism Pop is a members club. Keep it kind. Don''t post anything you wouldn''t show a friend.',
+    false
+)
+on conflict (slug) do nothing;
+
+insert into public.generation_examples (id, title, prompt, output_text, model_id)
+values (
+    'a11c0000-0000-4000-8000-000000000051',
+    'Laptop at 5pm',
+    'Caption a photo of someone closing a laptop at the end of the workday.',
+    'Closing my laptop at 5 PM while the production server burns.',
+    'a11c0000-0000-4000-8000-000000000011'
+)
+on conflict (id) do nothing;
 
 select public.apply_superadmin_crud('llm_providers');
 select public.apply_superadmin_crud('llm_models');

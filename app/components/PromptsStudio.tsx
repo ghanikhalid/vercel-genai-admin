@@ -75,20 +75,24 @@ export default function PromptsStudio({
         <ResourceManager
           kicker="Catalog"
           title="Prompt chains"
-          subtitle="Named pipelines used to generate copy."
+          subtitle="Named pipelines used to generate copy. Add one with New."
           table="prompt_chains"
           rows={chains}
           missing={missing}
           error={error}
-          readOnly
           searchKeys={["name", "description"]}
+          emptyLabel="No chains yet. Create one to start."
           columns={[
             { key: "name", label: "Name" },
             { key: "description", label: "Description", max: 90 },
             { key: "is_active", label: "Active" },
             { key: "updated_at", label: "Updated", mono: true, max: 24 },
           ]}
-          fields={[]}
+          fields={[
+            { key: "name", label: "Name", kind: "text", required: true },
+            { key: "description", label: "Description", kind: "textarea" },
+            { key: "is_active", label: "Active", kind: "toggle" },
+          ]}
         />
       ) : null}
 
@@ -106,15 +110,34 @@ export default function PromptsStudio({
             }))}
           missing={missing}
           error={error}
-          readOnly
           searchKeys={["name", "prompt_template", "chain_name"]}
+          emptyLabel="No steps yet. Add a chain first, then a step."
           columns={[
             { key: "chain_name", label: "Chain" },
             { key: "step_order", label: "Order" },
             { key: "name", label: "Step" },
             { key: "prompt_template", label: "Template", max: 72 },
           ]}
-          fields={[]}
+          fields={[
+            {
+              key: "chain_id",
+              label: "Chain",
+              kind: "select",
+              required: true,
+              options: chains.map((chain) => ({
+                value: chain.id,
+                label: chain.name,
+              })),
+            },
+            { key: "step_order", label: "Order", kind: "number", required: true },
+            { key: "name", label: "Step name", kind: "text", required: true },
+            {
+              key: "prompt_template",
+              label: "Prompt template",
+              kind: "textarea",
+              required: true,
+            },
+          ]}
         />
       ) : null}
 

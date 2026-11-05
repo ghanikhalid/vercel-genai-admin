@@ -11,6 +11,8 @@ import {
 const TABLES_WITH_UPDATED_AT = new Set<WritableTable>([
   "llm_providers",
   "llm_models",
+  "prompt_chains",
+  "prompt_chain_steps",
   "prompt_chain_mix",
   "terms",
   "images",

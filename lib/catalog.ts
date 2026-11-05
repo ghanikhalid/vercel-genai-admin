@@ -23,6 +23,8 @@ export type CatalogTable = (typeof CATALOG_TABLES)[number];
 export const WRITABLE_TABLES = [
   "llm_providers",
   "llm_models",
+  "prompt_chains",
+  "prompt_chain_steps",
   "prompt_chain_mix",
   "prompt_chain_mix_entries",
   "terms",

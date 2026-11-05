@@ -73,8 +73,6 @@ export default function ResourceManager<T extends { id: string }>({
 
   const isWritable =
     !readOnly &&
-    table !== "prompt_chains" &&
-    table !== "prompt_chain_steps" &&
     table !== "generation_requests" &&
     table !== "llm_responses";
 

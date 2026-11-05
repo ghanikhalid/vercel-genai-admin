@@ -44,6 +44,7 @@ export default async function TermsPage() {
           rows={terms.rows}
           missing={terms.missing}
           error={terms.error}
+          emptyLabel="No terms yet. Add one with New."
           searchKeys={["slug", "title", "body"]}
           columns={[
             { key: "title", label: "Title" },

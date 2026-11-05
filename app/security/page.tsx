@@ -46,8 +46,9 @@ export default async function AccessPage() {
             </h1>
           </div>
           <p className="page-sub">
-            Superadmins, allowed signup domains, and individual email
-            exceptions.
+            Superadmin is required for this console. Domain and email lists
+            below are optional — leave both empty if anyone with Google should
+            be able to join the product.
           </p>
         </div>
 
@@ -102,7 +103,7 @@ export default async function AccessPage() {
         <ResourceManager
           kicker="Signup"
           title="Allowed signup domains"
-          subtitle="Only these email domains can create an account, unless the address is individually listed below."
+          subtitle="Optional. Leave empty to allow every domain. If you add any domains, only those domains can sign up, plus any emails in the list below."
           table="allowed_signup_domains"
           rows={domains.rows}
           missing={domains.missing}
@@ -128,7 +129,7 @@ export default async function AccessPage() {
         <ResourceManager
           kicker="Exceptions"
           title="Whitelisted emails"
-          subtitle="Individual addresses that can sign up even if their domain is not allowed."
+          subtitle="Optional. Specific addresses that can always sign up. If both this list and domains are empty, signup stays open."
           table="whitelisted_emails"
           rows={emails.rows}
           missing={emails.missing}

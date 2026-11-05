@@ -86,6 +86,7 @@ export default function GenerationsStudio({
           missing={missing}
           error={error}
           readOnly
+          emptyLabel="No live requests yet. This fills when the product logs a generation."
           searchKeys={["prompt", "status", "user_id"]}
           columns={[
             { key: "status", label: "Status" },
@@ -109,6 +110,7 @@ export default function GenerationsStudio({
           }))}
           missing={missing}
           error={error}
+          emptyLabel="No examples yet. Add one with New."
           searchKeys={["title", "prompt", "output_text"]}
           columns={[
             { key: "title", label: "Title" },
@@ -144,6 +146,7 @@ export default function GenerationsStudio({
           missing={missing}
           error={error}
           readOnly
+          emptyLabel="No stored completions yet."
           searchKeys={["content", "request_id"]}
           columns={[
             { key: "request_id", label: "Request", mono: true, max: 12 },
